@@ -65,7 +65,7 @@ The application follows a layered architecture:
 ### Build Steps
 
 ```bash
-git clone https://github.com/yourusername/BankingSystem-UI-designed.git
+git clone https://github.com/yourusername/cpp-qt-banking-system.git
 cd BankingSystem-UI-designed--main
 mkdir build
 cd build
