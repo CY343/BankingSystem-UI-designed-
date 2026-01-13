@@ -65,13 +65,13 @@ The application follows a layered architecture:
 ### Build Steps
 
 ```bash
-git clone https://github.com/yourusername/cpp-qt-banking-system.git
-cd BankingSystem-UI-designed--main
+git clone https://github.com/YOUR_USERNAME/cpp-qt-banking-system.git
+cd cpp-qt-banking-system
 mkdir build
 cd build
 cmake .. -G "Visual Studio 17 2022"
 cmake --build . --config Debug
-build/Debug/
+
 ```
 When running outside Qt Creator, use `windeployqt` to deploy required Qt runtime libraries.
 
