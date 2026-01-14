@@ -29,43 +29,22 @@
     <widget class="QWidget" name="centralWidget" native="true">
      <layout class="QGridLayout" name="gridLayout">
       <item row="2" column="1">
-       <spacer name="verticalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+       <widget class="QLabel" name="signupHintLabel">
+        <property name="font">
+         <font>
+          <pointsize>9</pointsize>
+         </font>
         </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
+        <property name="text">
+         <string>New customer? Please contact a manager to create your account.</string>
         </property>
-       </spacer>
-      </item>
-      <item row="0" column="1">
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
+        <property name="wordWrap">
+         <bool>true</bool>
         </property>
-       </spacer>
-      </item>
-      <item row="1" column="0">
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
+       </widget>
       </item>
       <item row="1" column="1">
        <widget class="QFrame" name="cardFrame">
@@ -195,6 +174,45 @@
          <size>
           <width>40</width>
           <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="3" column="1">
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="1" column="0">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="0" column="1">
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
          </size>
         </property>
        </spacer>

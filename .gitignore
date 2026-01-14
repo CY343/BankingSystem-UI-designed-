@@ -62,6 +62,8 @@ qrc_*.cpp
 
 Thumbs.db
 
+desktop.ini
+
 *.res
 
 *.rc

@@ -289,11 +289,11 @@
             {
                 card->setActivated(false);
                 card->markExpired();
-                std::cout<< "Credit card " << cardNumber << "blocked for account #" << getAccountNumber() << std::endl;
+                std::cout<< "Debit card " << cardNumber << "blocked for account #" << getAccountNumber() << std::endl;
                 return true;
             }
         }
-            std::cerr << "Credit card " << cardNumber << " not found for account " << getAccountNumber() << std::endl;
+            std::cerr << "Debit card " << cardNumber << " not found for account " << getAccountNumber() << std::endl;
             return false;
     }
 

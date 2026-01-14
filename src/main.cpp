@@ -1,10 +1,5 @@
 #include <QApplication>
 #include <QIcon>
-#include "LoginWindow.hpp"
-#include "mainwindow.h"
-#include "managerwindow.h"
-#include "Services.hpp"
-#include "seedData.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <QDebug>
@@ -12,6 +7,38 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QUuid>
+
+#include "LoginWindow.hpp"
+#include "mainwindow.h"
+#include "managerwindow.h"
+#include "Services.hpp"
+#include "seedData.hpp"
+#include "appFlow.h"
+#include <QTimer>
+
+void showLoginAndRoute(Services* services)
+{
+    LoginWindow login(nullptr, services);
+
+    if (login.exec() != QDialog::Accepted) {
+        return; // user closed login
+    }
+
+    auto loggedInCustomer = login.getLoggedInCustomer();
+
+    if (loggedInCustomer) {
+        auto *w = new MainWindow(nullptr, services, loggedInCustomer);
+        w->setAttribute(Qt::WA_DeleteOnClose);
+        w->show();
+    } else {
+        auto *w = new ManagerWindow(nullptr, services);
+        w->setAttribute(Qt::WA_DeleteOnClose);
+        w->show();
+
+    }
+}
+
+
 
 static void myTerminateHandler()
 {
@@ -66,13 +93,14 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
     a.setWindowIcon(QIcon(":/icons/resources/icons/Bank of World.ico"));
+    QApplication::setQuitOnLastWindowClosed(false);
+
 
     Services services;
     seedTestData(services);
 
     if (!openDb()) return 1;
 
-    // Print identity
     {
         QSqlDatabase db = QSqlDatabase::database(kConnName);
         QSqlQuery q(db);
@@ -88,7 +116,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Ping
     {
         QSqlDatabase db = QSqlDatabase::database(kConnName);
         QSqlQuery q(db);
@@ -96,7 +123,6 @@ int main(int argc, char *argv[])
         else qDebug() << "DB ping failed:" << q.lastError().text();
     }
 
-    // ===================== Option B: Explicit transaction + commit =====================
     {
         QSqlDatabase db = QSqlDatabase::database(kConnName);
         QSqlQuery q(db);
@@ -138,37 +164,11 @@ int main(int argc, char *argv[])
     }
     // ================================================================================
 
-    // Login window setup
-    LoginWindow login(nullptr, &services);
+    showLoginAndRoute(&services);
 
-    MainWindow* mainWindow = nullptr;
-    ManagerWindow* managerWindow = nullptr;
-
-    int rc = 0;
-
-    if (login.exec() == QDialog::Accepted)
-    {
-        auto loggedInCustomer = login.getLoggedInCustomer();
-
-        if (loggedInCustomer)
-        {
-            mainWindow = new MainWindow(nullptr, &services, loggedInCustomer);
-            mainWindow->setAttribute(Qt::WA_DeleteOnClose);
-            mainWindow->show();
-        }
-        else
-        {
-            managerWindow = new ManagerWindow(nullptr, &services);
-            managerWindow->setAttribute(Qt::WA_DeleteOnClose);
-            managerWindow->show();
-        }
-
-        rc = a.exec();
-
-        closeDb();
-        return rc;
-    }
+    // Run Qt event loop ONCE
+    int rc = a.exec();
 
     closeDb();
-    return 0;
+    return rc;
 }

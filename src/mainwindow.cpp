@@ -22,8 +22,14 @@
 #include <QHeaderView>
 #include <QAbstractItemView>
 #include <QDebug>
+#include <QTimer>
+#include <QShowEvent>
 
 #include "Customers.hpp"
+#include "DebitCard.hpp"
+#include "CreditCard.hpp"
+#include "appFlow.h"
+
 
 // -------------------- CTOR / DTOR --------------------
 
@@ -36,13 +42,34 @@ MainWindow::MainWindow(QWidget *parent, Services *services, std::shared_ptr<Cust
     ui->setupUi(this);
     setWindowIcon(QIcon(":/icons/resources/icons/Bank of World.ico"));
 
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // Make accounts table read-only (already correct)
+
+
     ui->tableAccounts->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tableAccounts->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableAccounts->setSelectionBehavior(QAbstractItemView::SelectItems);
     ui->tableAccounts->setSelectionMode(QAbstractItemView::SingleSelection);
 
+
     setWindowTitle("Customer Dashboard");
+
+    ui->tableAccounts->verticalHeader()->setVisible(false);
+    ui->tableAccounts->setShowGrid(false);
+    ui->tableAccounts->setAlternatingRowColors(true);
+
+    ui->tableAccounts->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableAccounts->horizontalHeader()->setStretchLastSection(true);
+    ui->tableAccounts->setAlternatingRowColors(true);
+
+
+    // ---- Cards table setup ----
+    ui->tableCards->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableCards->setSelectionBehavior(QAbstractItemView::SelectItems);
+    ui->tableCards->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableCards->verticalHeader()->setVisible(false);
+    ui->tableCards->setShowGrid(false);
+    ui->tableCards->setAlternatingRowColors(true);
+    ui->tableCards->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
 
 
@@ -94,6 +121,9 @@ MainWindow::MainWindow(QWidget *parent, Services *services, std::shared_ptr<Cust
         padding: 4px;
         font-weight: bold;
     }
+
+    QTableWidget { background-color: #ffffff; }
+    QTableWidget QTableCornerButton::section { background-color: #2980b9; }
 
     QListWidget {
         background-color: #ffffff;
@@ -187,7 +217,7 @@ MainWindow::MainWindow(QWidget *parent, Services *services, std::shared_ptr<Cust
         statusBar()->showMessage("Logged in as: " + QString::fromStdString(currentCustomer_->getName()));
         displayCustomerInfo();
         refreshAccountList();
-        refreshCardList();
+        refreshCardTable();
     } else {
         statusBar()->showMessage("Customer session invalid.");
     }
@@ -324,8 +354,6 @@ void MainWindow::refreshAccountList()
         ui->tableAccounts->setItem(row, 5, new QTableWidgetItem(QString::number(dailyLimit, 'f', 2)));
     }
 
-    ui->tableAccounts->resizeColumnsToContents();
-    ui->tableAccounts->horizontalHeader()->setStretchLastSection(false);
 
     if (selectedAccNum != -1) {
         for (int r = 0; r < ui->tableAccounts->rowCount(); ++r) {
@@ -338,6 +366,9 @@ void MainWindow::refreshAccountList()
 
     ui->tableAccounts->setUpdatesEnabled(true);
     ui->tableAccounts->blockSignals(false);
+
+    ui->tableAccounts->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableAccounts->horizontalHeader()->setStretchLastSection(true);
 }
 
 // -------------------- TRANSACTIONS --------------------
@@ -529,50 +560,51 @@ void MainWindow::on_replaceCardButton_clicked()
 
     if (newCard) {
         showToastSuccess("Card replaced and activated");
-        refreshCardList();
+        refreshCardTable();
     } else {
         QMessageBox::critical(this, "Error", "Failed to generate replacement card.");
         showToastError("Replace failed");
     }
 }
 
-void MainWindow::refreshCardList()
-{
-    if (!ui->cardListWidget) return;
+// =============================================== ui design changed ===============================================
+// void MainWindow::refreshCardList()
+// {
+//     if (!ui->cardListWidget) return;
 
-    ui->cardListWidget->clear();
-    if (!currentCustomer_) return;
+//     ui->cardListWidget->clear();
+//     if (!currentCustomer_) return;
 
-    for (const auto& accountPtr : currentCustomer_->getAccount()) {
-        auto checkingAccount = std::dynamic_pointer_cast<CheckingAccount>(accountPtr);
-        if (!checkingAccount) continue;
+//     for (const auto& accountPtr : currentCustomer_->getAccount()) {
+//         auto checkingAccount = std::dynamic_pointer_cast<CheckingAccount>(accountPtr);
+//         if (!checkingAccount) continue;
 
-        for (const auto& debitCard : checkingAccount->getDebitCards()) {
-            QString displayText =
-                QString("Debit Card: %1 | Exp: %2 | CVV: %3 | Activated: %4 | Daily Withdrawal Limit: %5 | Contactless Enable: %6")
-                    .arg(QString::fromStdString(debitCard->getCardNumber()))
-                    .arg(QString::fromStdString(debitCard->getDisplayExpiration()))
-                    .arg(QString::fromStdString(debitCard->getMaskedCvv()))
-                    .arg(debitCard->isActivated() ? "Yes" : "No")
-                    .arg(debitCard->getDailyWithdrawalLimit(), 0, 'f', 2)
-                    .arg(debitCard->isContactlessEnabled() ? "Yes" : "No");
-            ui->cardListWidget->addItem(displayText);
-        }
+//         for (const auto& debitCard : checkingAccount->getDebitCards()) {
+//             QString displayText =
+//                 QString("Debit Card: %1 | Exp: %2 | CVV: %3 | Activated: %4 | Daily Withdrawal Limit: %5 | Contactless Enable: %6")
+//                     .arg(QString::fromStdString(debitCard->getCardNumber()))
+//                     .arg(QString::fromStdString(debitCard->getDisplayExpiration()))
+//                     .arg(QString::fromStdString(debitCard->getMaskedCvv()))
+//                     .arg(debitCard->isActivated() ? "Yes" : "No")
+//                     .arg(debitCard->getDailyWithdrawalLimit(), 0, 'f', 2)
+//                     .arg(debitCard->isContactlessEnabled() ? "Yes" : "No");
+//             ui->cardListWidget->addItem(displayText);
+//         }
 
-        for (const auto& creditCard : checkingAccount->getCreditCards()) {
-            QString displayText =
-                QString("Credit Card: %1 | Exp: %2 | CVV: %3 | Limit: $%4 | Balance: $%5 | Activated: %6 | Contactless Enable: %7")
-                    .arg(QString::fromStdString(creditCard->getCardNumber()))
-                    .arg(QString::fromStdString(creditCard->getDisplayExpiration()))
-                    .arg(QString::fromStdString(creditCard->getMaskedCvv()))
-                    .arg(creditCard->getCreditLimit(), 0, 'f', 2)
-                    .arg(creditCard->getCurrentBalance(), 0, 'f', 2)
-                    .arg(creditCard->isActivated() ? "Yes" : "No")
-                    .arg(creditCard->isContactlessEnabled() ? "Yes" : "No");
-            ui->cardListWidget->addItem(displayText);
-        }
-    }
-}
+//         for (const auto& creditCard : checkingAccount->getCreditCards()) {
+//             QString displayText =
+//                 QString("Credit Card: %1 | Exp: %2 | CVV: %3 | Limit: $%4 | Balance: $%5 | Activated: %6 | Contactless Enable: %7")
+//                     .arg(QString::fromStdString(creditCard->getCardNumber()))
+//                     .arg(QString::fromStdString(creditCard->getDisplayExpiration()))
+//                     .arg(QString::fromStdString(creditCard->getMaskedCvv()))
+//                     .arg(creditCard->getCreditLimit(), 0, 'f', 2)
+//                     .arg(creditCard->getCurrentBalance(), 0, 'f', 2)
+//                     .arg(creditCard->isActivated() ? "Yes" : "No")
+//                     .arg(creditCard->isContactlessEnabled() ? "Yes" : "No");
+//             ui->cardListWidget->addItem(displayText);
+//         }
+//     }
+// }
 
 // -------------------- EXPORT --------------------
 
@@ -696,10 +728,7 @@ void MainWindow::displayCustomerInfo()
 void MainWindow::handleLogout()
 {
     this->close();
-
-    LoginWindow* login = new LoginWindow();
-    login->setAttribute(Qt::WA_DeleteOnClose);
-    login->show();
+    showLoginAndRoute(services_);
 }
 
 // -------------------- TOAST HELPERS --------------------
@@ -720,4 +749,155 @@ void MainWindow::showToastError(const QString& msg, int ms)
 {
     auto *t = new Toast(msg, Toast::Error);
     t->popupCentered(this, ms);
+}
+
+void MainWindow::refreshCardTable()
+{
+    if (!ui->tableCards || !currentCustomer_) return;
+
+    const auto& cards = currentCustomer_->getAllCards();
+
+    ui->tableCards->clearContents();
+    ui->tableCards->setRowCount((int)cards.size());
+    ui->tableCards->setColumnCount(6);
+    ui->tableCards->setHorizontalHeaderLabels(
+        {"Type", "Last 4", "Activated", "Expired", "Contactless", "Limit/Util"}
+        );
+
+    for (int r = 0; r < (int)cards.size(); ++r) {
+        auto c = cards[r];
+        if (!c) continue;
+
+        const std::string num = c->getCardNumber();
+        QString last4 = (num.size() >= 4)
+                            ? QString::fromStdString(num.substr(num.size() - 4))
+                            : QString::fromStdString(num);
+
+        QString type = "Card";
+        QString contactless = "N/A";
+        QString limitOrUtil = "N/A";
+
+        if (std::dynamic_pointer_cast<DebitCard>(c)) type = "Debit";
+        else if (std::dynamic_pointer_cast<CreditCard>(c)) type = "Credit";
+
+        // Contactless + limit/utilization
+        if (auto d = std::dynamic_pointer_cast<DebitCard>(c)) {
+            contactless = d->isContactlessEnabled() ? "Yes" : "No";
+            limitOrUtil = QString("$%1").arg(d->getDailyWithdrawalLimit(), 0, 'f', 0);
+        }
+        else if (auto cr = std::dynamic_pointer_cast<CreditCard>(c)) {
+            contactless = cr->isContactlessEnabled() ? "Yes" : "No";
+            limitOrUtil = QString("%1%").arg(cr->getUtilizationPercentage(), 0, 'f', 1);
+        }
+
+        auto *typeItem = new QTableWidgetItem(type);
+        // store full card number in UserRole so we can find it later
+        typeItem->setData(Qt::UserRole, QString::fromStdString(num));
+
+        ui->tableCards->setItem(r, 0, typeItem);
+        ui->tableCards->setItem(r, 1, new QTableWidgetItem(last4));
+        ui->tableCards->setItem(r, 2, new QTableWidgetItem(c->isActivated() ? "Yes" : "No"));
+        ui->tableCards->setItem(r, 3, new QTableWidgetItem(c->isExpired() ? "Yes" : "No"));
+        ui->tableCards->setItem(r, 4, new QTableWidgetItem(contactless));
+        ui->tableCards->setItem(r, 5, new QTableWidgetItem(limitOrUtil));
+    }
+}
+
+// helper function
+std::shared_ptr<Card> MainWindow::getSelectedCard() const
+{
+    int row = ui->tableCards->currentRow();
+    if (row < 0) return nullptr;
+
+    auto *item = ui->tableCards->item(row, 0);
+    if (!item) return nullptr;
+
+    QString cardNumber = item->data(Qt::UserRole).toString();
+    if (cardNumber.isEmpty()) return nullptr;
+
+    for (auto &c : currentCustomer_->getAllCards()) {
+        if (c && QString::fromStdString(c->getCardNumber()) == cardNumber)
+            return c;
+    }
+    return nullptr;
+}
+
+void MainWindow::on_activateCardButton_clicked()
+{
+    auto card = getSelectedCard();
+    if (!card) { showToastError("Select a card first"); return; }
+    card->setActivated(true);
+    refreshCardTable();
+    showToastSuccess("Card activated");
+}
+
+void MainWindow::on_deactivateCardButton_clicked()
+{
+    auto card = getSelectedCard();
+    if (!card) { showToastError("Select a card first"); return; }
+    card->setActivated(false);
+    refreshCardTable();
+    showToastSuccess("Card deactivated");
+}
+
+void MainWindow::on_markExpiredButton_clicked()
+{
+    auto card = getSelectedCard();
+    if (!card) { showToastError("Select a card first"); return; }
+    card->markExpired();
+    card->setActivated(false);
+    refreshCardTable();
+    showToastSuccess("Card expired");
+}
+
+void MainWindow::on_toggleContactlessButton_clicked()
+{
+    auto card = getSelectedCard();
+    if (!card) { showToastError("Select a card first"); return; }
+
+    if (auto d = std::dynamic_pointer_cast<DebitCard>(card)) {
+        d->enableContactless(!d->isContactlessEnabled());
+    } else if (auto c = std::dynamic_pointer_cast<CreditCard>(card)) {
+        c->enableContactless(!c->isContactlessEnabled());
+    } else {
+        showToastError("Unknown card type");
+        return;
+    }
+
+    refreshCardTable();
+    showToastSuccess("Contactless updated");
+}
+
+void MainWindow::on_setDailyLimitButton_clicked()
+{
+    auto card = getSelectedCard();
+    auto d = std::dynamic_pointer_cast<DebitCard>(card);
+    if (!d) { showToastError("Select a debit card"); return; }
+
+    bool ok = false;
+    double newLimit = QInputDialog::getDouble(
+        this, "Daily Withdrawal Limit",
+        "Enter new daily limit:",
+        d->getDailyWithdrawalLimit(),
+        0, 1000000, 2, &ok
+        );
+    if (!ok) return;
+
+    d->SetDailyWithdrawalLimit(newLimit);
+    refreshCardTable();
+    showToastSuccess("Daily limit updated");
+}
+
+void MainWindow::showEvent(QShowEvent* e)
+{
+    QMainWindow::showEvent(e);
+
+    if (!firstShow_) return;
+    firstShow_ = false;
+
+    QTimer::singleShot(0, this, [this] {
+        setWindowState(windowState() | Qt::WindowMaximized);
+        raise();
+        activateWindow();
+    });
 }

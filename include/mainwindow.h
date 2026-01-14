@@ -31,11 +31,20 @@ private slots:
     void on_replaceCardButton_clicked();
     void on_exportTransactionsButton_clicked();
 
+    void on_activateCardButton_clicked();
+    void on_deactivateCardButton_clicked();
+    void on_toggleContactlessButton_clicked();
+    void on_setDailyLimitButton_clicked();
+    void on_markExpiredButton_clicked();
+
 
 
 
     
     void handleLogout();
+
+protected:
+    void showEvent(QShowEvent* e) override;
 
 
 private:
@@ -44,6 +53,11 @@ private:
     void refreshTransactionList(std::shared_ptr<BankAccount> account);
     void displayCustomerInfo();
     void refreshCardList();
+    bool firstShow_ = true;
+
+
+    void refreshCardTable();
+    std::shared_ptr<Card> getSelectedCard() const;
 
 
 

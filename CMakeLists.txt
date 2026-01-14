@@ -124,6 +124,7 @@ qt_add_executable(BankingUI
     ${HEADERS}
     ${UIS}
     resources.qrc
+    include/appFlow.h
 )
 
 

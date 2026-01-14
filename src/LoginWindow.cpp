@@ -1,5 +1,7 @@
 #include "LoginWindow.hpp"
 #include "ui_LoginWindow.h"
+#include "managerwindow.h"
+#include "mainwindow.h"
 #include <QGraphicsDropShadowEffect>
 #include<QMessageBox>
 
@@ -89,6 +91,11 @@ LoginWindow::LoginWindow(QWidget *parent, Services* services)
         margin-bottom: 14px;
     }
 
+    QLabel#signupHintLabel {
+        color: #6b7280;
+        font-size: 9.5pt;
+    }
+
     )");
 
     ui->titleLabel->setAlignment(Qt::AlignCenter);
@@ -140,25 +147,34 @@ void LoginWindow::handleLogin()
         return;
     }
 
-    const std::string username = userQ.toStdString();
-    const std::string password = passQ.toStdString();
+    if (!services_) {
+        QMessageBox::critical(this, "Error", "services_ is null");
+        return;
+    }
 
     std::shared_ptr<Customers> customer;
-    Services::LoginRole role = services_ -> authenticate(username, password, customer);
+    Services::LoginRole role = services_->authenticate(userQ.toStdString(), passQ.toStdString(), customer);
 
-    if(role == Services::LoginRole::Customer)
-    {
-        loggedInCustomer_ = customer;
-        accept();
-        return;
-    }
-    if(role == Services::LoginRole::Manager)
-    {
-        loggedInCustomer_.reset();
-        accept();
+    if (role == Services::LoginRole::Manager) {
+        auto *mw = new ManagerWindow(nullptr, services_);
+        mw->setAttribute(Qt::WA_DeleteOnClose);
+        mw->show();
+        this->close();
         return;
     }
 
-     //LOGIN FAILED
+    if (role == Services::LoginRole::Customer) {
+        if (!customer) {
+            QMessageBox::warning(this, "Login Failed", "Customer session invalid.");
+            return;
+        }
+        auto *cw = new MainWindow(nullptr, services_, customer);
+        cw->setAttribute(Qt::WA_DeleteOnClose);
+        cw->show();
+        this->close();
+        return;
+    }
+
     QMessageBox::warning(this, "Login Failed", "Incorrect username or password");
 }
+

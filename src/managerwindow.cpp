@@ -1,12 +1,19 @@
 #include "managerwindow.h"
 #include "ui_managerwindow.h"
+#include "LoginWindow.hpp"
 #include"Services.hpp"
 #include"Customers.hpp"
-#include"QMessageBox"
+#include "appFlow.h"
+#include<QMessageBox>
 #include"QInputDialog"
 #include"QDebug"
 #include<QTableWidget>
+#include <QHeaderView>
+#include <QAction>
+#include <QWidget>
 #include<string>
+#include<QTimer>
+#include <QShowEvent>
 
 
 ManagerWindow::ManagerWindow(QWidget *parent, Services* services)
@@ -17,11 +24,86 @@ ManagerWindow::ManagerWindow(QWidget *parent, Services* services)
     ui->setupUi(this);
     this->setWindowTitle("System Manager Dashboard");
     setWindowIcon(QIcon(":/icons/resources/icons/Bank of World.ico"));
+    ui->accountDetailTable->horizontalHeader()->setStretchLastSection(true);
+
+
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+
+    // ===== Toolbar Logout =====
+    QWidget* spacer = new QWidget(this);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    ui->toolBar->addWidget(spacer);
+
+    QAction* logoutAction = new QAction("Logout", this);
+    connect(logoutAction, &QAction::triggered,
+            this, &ManagerWindow::handleLogout);
+
+    ui->toolBar->addAction(logoutAction);
+
+    ui->toolBar->setStyleSheet(R"(
+    QToolBar { background: #ecf0f1; border-bottom: 1px solid #dcdcdc; }
+    QToolButton { color: #1F497D; font-weight: bold; }
+    QToolButton:hover { color: #16345c; }
+    )");
+
+    this->setStyleSheet(R"(
+        QMainWindow {
+            background-color: #f0f3f7;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 11pt;
+        }
+
+        QPushButton {
+            background-color: #1F497D;
+            color: white;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-weight: bold;
+        }
+        QPushButton:hover { background-color: #16345c; }
+
+        QTableWidget {
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #dcdcdc;
+            gridline-color: #dcdcdc;
+            selection-background-color: #3498db;
+            selection-color: white;
+        }
+
+        QHeaderView::section {
+            background-color: #2980b9;
+            color: white;
+            padding: 4px;
+            font-weight: bold;
+        }
+
+        QLabel {
+            background: transparent;
+            color: #000000;
+            font-weight: bold;
+            padding: 2px;
+        }
+
+)");
 
 
 
     // connect signals to slots
     connect(ui->customerTableWidget, &QTableWidget::cellClicked, this, &ManagerWindow::on_customerTableWidget_cellClicked);
+    ui->customerTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->accountDetailTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->customerTableWidget->verticalHeader()->setVisible(false);
+    ui->accountDetailTable->verticalHeader()->setVisible(false);
+
+    connect(ui->addCustomerButton, &QPushButton::clicked,
+            this, &ManagerWindow::on_addCustomerButton_clicked);
+
+    connect(ui->deleteCustomerButton, &QPushButton::clicked,
+            this, &ManagerWindow::on_deleteCustomerButton_clicked);
+
+
 
     refreshCustomerList();
 
@@ -55,7 +137,6 @@ void ManagerWindow::refreshCustomerList(){
         ui->customerTableWidget->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(c->getShortCustomerId())));
 
     }
-    ui->customerTableWidget->resizeColumnsToContents();
 
 }
 
@@ -83,7 +164,6 @@ void ManagerWindow::displayCustomerAccounts(const std::string& customerId){
     ui->accountDetailTable->setItem(row, 2, new QTableWidgetItem(QString::number(acc->getAccountBalance(), 'f', 2)));
 }
 
-    ui->accountDetailTable->resizeColumnsToContents();
 
 }
 
@@ -131,8 +211,15 @@ void ManagerWindow::on_addCustomerButton_clicked()
         auto defaultAccount = std::make_shared<SavingAccount>(100.0, 0.01);
         newCustomer->addAccount(defaultAccount);
 
-        QMessageBox::information(this, "Success", "New customer registered and default account created.");
-        refreshCustomerList();
+        QMessageBox::information(
+            this,
+            "Customer Created",
+            QString(
+                "New customer registered successfully.\n\n"
+                "User ID: %1\n\n"
+                "The customer can now log in using this User ID."
+                ).arg(QString::fromStdString(newCustomer->getName()))
+            );
     }
     catch (const std::exception& e) {
         QMessageBox::critical(this, "Registration Failed", QString("Error: %1").arg(e.what()));
@@ -144,7 +231,7 @@ void ManagerWindow::on_addCustomerButton_clicked()
 void ManagerWindow::on_deleteCustomerButton_clicked()
 {
     int row = ui->customerTableWidget->currentRow();
-    if (row < 0 || row >= currentCustomerList_.size()) {
+    if (row < 0 || row >= (int)currentCustomerList_.size()) {
         QMessageBox::warning(this, "Action Failed", "Please select a customer to delete.");
         return;
     }
@@ -176,4 +263,24 @@ void ManagerWindow::on_deleteCustomerButton_clicked()
         }
     }
 
+}
+
+void ManagerWindow::handleLogout()
+{
+    this->close();
+    showLoginAndRoute(services_);
+}
+
+void ManagerWindow::showEvent(QShowEvent* e)
+{
+    QMainWindow::showEvent(e);
+
+    if (!firstShow_) return;
+    firstShow_ = false;
+
+    QTimer::singleShot(0, this, [this] {
+        setWindowState(windowState() | Qt::WindowMaximized);
+        raise();
+        activateWindow();
+    });
 }

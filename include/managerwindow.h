@@ -24,6 +24,7 @@ private slots:
     // slots for managing customers
     void on_addCustomerButton_clicked();
     void on_deleteCustomerButton_clicked();
+    void handleLogout();
 
     // slot to handle seleting a customer to view their accounts
     void on_customerTableWidget_cellClicked(int row, int column);
@@ -35,10 +36,15 @@ private:
     void refreshCustomerList();
     void displayCustomerAccounts(const std::string& customerId);
 
+     bool firstShow_ = true;
+
+
 
     // list to hold the currently fetched customers for look lookup
     std::vector<std::shared_ptr<Customers>> currentCustomerList_;
 
+protected:
+    void showEvent(QShowEvent* e) override;
 };
 
 #endif // MANAGERWINDOW_H
