@@ -540,18 +540,21 @@ void MainWindow::on_replaceCardButton_clicked()
 {
     if (!currentCustomer_) return;
 
-    const auto& cards = currentCustomer_->getAllCards(); // your API
-    if (cards.empty()) {
-        showToastError("No cards found to replace");
+    auto oldCard = getSelectedCard();
+    if (!oldCard) {
+        showToastError("Select a card first");
         return;
     }
 
-    auto oldCard = cards[0];
+    const std::string num = oldCard->getCardNumber();
+    QString last4 = (num.size() >= 4)
+                        ? QString::fromStdString(num.substr(num.size() - 4))
+                        : QString::fromStdString(num);
 
     QMessageBox::StandardButton reply =
         QMessageBox::question(this, "Replace Card",
                               QString("Are you sure you want to replace card ending in %1?")
-                                  .arg(QString::fromStdString(oldCard->getCardNumber().substr(12))),
+                                  .arg(last4),
                               QMessageBox::Yes | QMessageBox::No);
 
     if (reply != QMessageBox::Yes) return;
@@ -566,6 +569,7 @@ void MainWindow::on_replaceCardButton_clicked()
         showToastError("Replace failed");
     }
 }
+
 
 // =============================================== ui design changed ===============================================
 // void MainWindow::refreshCardList()

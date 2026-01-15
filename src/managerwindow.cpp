@@ -91,12 +91,14 @@ ManagerWindow::ManagerWindow(QWidget *parent, Services* services)
 
 
     // connect signals to slots
-    connect(ui->customerTableWidget, &QTableWidget::cellClicked, this, &ManagerWindow::on_customerTableWidget_cellClicked);
+    connect(ui->customerTableWidget, &QTableWidget::cellClicked, this, &ManagerWindow::on_customerTableWidget_cellClicked, Qt::UniqueConnection);
     ui->customerTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->accountDetailTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->customerTableWidget->verticalHeader()->setVisible(false);
     ui->accountDetailTable->verticalHeader()->setVisible(false);
 
+    QObject::disconnect(ui->addCustomerButton, nullptr, this, nullptr);
+    QObject::disconnect(ui->deleteCustomerButton, nullptr, this, nullptr);
     connect(ui->addCustomerButton, &QPushButton::clicked,
             this, &ManagerWindow::on_addCustomerButton_clicked);
 
@@ -168,7 +170,7 @@ void ManagerWindow::displayCustomerAccounts(const std::string& customerId){
 }
 
 void ManagerWindow::on_customerTableWidget_cellClicked(int row, int column){
-    if(row < 0 || row > currentCustomerList_.size()) return;
+    if(row < 0 || row >= (int)currentCustomerList_.size()) return;
     const auto& customer = currentCustomerList_[row];
     displayCustomerAccounts(customer->getCustomerId());
 }
@@ -188,7 +190,7 @@ void ManagerWindow::on_addCustomerButton_clicked()
     QString phone = QInputDialog::getText(this, "New Customer Registration", "Phone Number (10 digits):", QLineEdit::Normal, "", &ok);
     if (!ok || phone.isEmpty()) return;
 
-    int age = QInputDialog::getInt(this, "New Customer Registration", "Age:", 18, 0, 150, 1, &ok);
+    int age = QInputDialog::getInt(this, "New Customer Registration", "Age(must be 18 or older):", 18, 18, 150, 1, &ok);
     if (!ok) return;
 
     QString address = QInputDialog::getText(this, "New Customer Registration", "Address:", QLineEdit::Normal, "", &ok);
@@ -220,6 +222,7 @@ void ManagerWindow::on_addCustomerButton_clicked()
                 "The customer can now log in using this User ID."
                 ).arg(QString::fromStdString(newCustomer->getName()))
             );
+        refreshCustomerList();
     }
     catch (const std::exception& e) {
         QMessageBox::critical(this, "Registration Failed", QString("Error: %1").arg(e.what()));
@@ -256,8 +259,6 @@ void ManagerWindow::on_deleteCustomerButton_clicked()
             ui->accountDetailTable->clearContents(); // Clear the table data
             ui->accountDetailTable->setRowCount(0);  // Reset row count to zero
 
-            QMessageBox::information(this, "Success",
-                                     QString("Customer '%1' successfully deleted from the system.").arg(QString::fromStdString(customerName)));
         } else {
             QMessageBox::critical(this, "Deletion Failed", "Failed to remove customer from the service registry.");
         }

@@ -12,7 +12,7 @@ void seedTestData(Services& services)
         );
 
     std::shared_ptr<Customers> customer2 = std::make_shared<Customers>(
-        "Dubmbie Deby", "deby@dailyplanet.com", "987-654-3210", 30, "321-23 55th ave"
+        "Deby", "deby@dailyplanet.com", "987-654-3210", 30, "321-23 55th ave"
         );
 
     // Create accounts with sufficient balances
