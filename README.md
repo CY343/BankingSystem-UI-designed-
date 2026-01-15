@@ -88,8 +88,22 @@ When running outside Qt Creator, use `windeployqt` to deploy required Qt runtime
 
 ### Manager Dashboard
 ![Manager Dashboard](docs/screenshots/managerDashboard.png)
+---
 
+## 🎥 Demo
 
+▶️ **Watch the demo video:**  
+https://github.com/CY343/cpp-qt-banking-system/releases/tag/v1.0-demo
+
+This video demonstrates:
+- Customer login and dashboard
+- Account creation (Savings / Checking)
+- Deposits & withdrawals with validation
+- Debit card daily limits
+- Transaction history export (CSV / PDF)
+- Manager dashboard for customer administration
+
+  
 ## Author
 
 Cheng Yue  
